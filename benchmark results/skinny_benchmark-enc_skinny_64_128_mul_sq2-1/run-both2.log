@@ -1,0 +1,10 @@
+Using security parameter 40
+Starting timer 1 at 0 (0 MB) after 1.3896e-05
+Stopped timer 1 at 0.297998 (41.3725 MB)
+Significant amount of unused triples of SPDZ gf2n_. For more accurate benchmarks, consider reducing the batch size with --batch-size.
+Note that some protocols have larger minimum batch sizes.
+The following benchmarks are including preprocessing (offline phase).
+Time = 0.300991 seconds 
+Time1 = 0.297998 seconds (41.3725 MB)
+Data sent = 41.4534 MB in ~3085 rounds (party 2; use '-v' for more details)
+Global data sent = 124.474 MB (all parties)

@@ -1,0 +1,170 @@
+import Programs.Source.skinny_gf2n as skinny
+from Programs.Source.aes import Aes128
+import Programs.Source.photon as photon
+
+import sys
+
+if len(sys.argv) < 4:
+    print('\n\n' + '-' * 40)
+    print('Usage: compile.py skinny_benchmark CIRCUIT SIMD')
+    print('  CIRCUIT: The name of the circuit to compile, e.g., "s4_mul" or "enc_skinny_64_128_mul" or "enc_photon_100_crv". See source for all options.')
+    print('  SIMD: The number of parallel evaluations; E.g., if SIMD=1, only one evaluation will be compiled; If SIMD=100, 100 parallel evaluations are compiled. More parallel evaluations usually lead to better amortized performance.')
+    quit(-1)
+
+idx = 1
+while sys.argv[idx] != 'skinny_benchmark':
+    idx += 1
+
+circuit = sys.argv[idx+1]
+simd = int(sys.argv[idx+2])
+
+print(f'Compiling {circuit}, SIMD={simd} bytes')
+
+sboxes = {
+    's4_mul': skinny._s4_sbox_direct_poly,
+    's4_mul_sq1': skinny._s4_sbox_direct_poly_sq1,
+    's4_mul_sq2': skinny._s4_sbox_direct_poly_sq2,
+    's4_mul_sq3': skinny._s4_sbox_direct_poly_sq3,
+    's4_mul_sq4': skinny._s4_sbox_direct_poly_sq4,
+    's4_crv': skinny._s4_sbox_crv,
+    's4_bin': lambda x: skinny._s4_sbox(x, cgf2n(0x1, size=simd)),
+    's4_inv_mul': skinny._s4_sbox_inv_direct_poly,
+    's4_inv_mul_sq1': skinny._s4_sbox_inv_direct_poly_sq1,
+    's4_inv_mul_sq2': skinny._s4_sbox_inv_direct_poly_sq2,
+    's4_inv_mul_sq3': skinny._s4_sbox_inv_direct_poly_sq3,
+    's4_inv_mul_sq4': skinny._s4_sbox_inv_direct_poly_sq4,
+    's4_inv_crv': skinny._s4_sbox_inv_crv,
+    's8_crv': skinny._s8_sbox_crv,
+    'aes': lambda x: photon.aes_sbox([x] * 8, cgf2n(0x1, size=simd)),
+}
+
+skinny_circuits = {
+    'enc_skinny_64_128_mul': (skinny.SkinnyGF2n.SKINNY_64_128, 'mul', 'enc'),
+    'enc_skinny_64_128_mul_sq1': (skinny.SkinnyGF2n.SKINNY_64_128, 'mul_sq1', 'enc'),
+    'enc_skinny_64_128_mul_sq2': (skinny.SkinnyGF2n.SKINNY_64_128, 'mul_sq2', 'enc'),
+    'enc_skinny_64_128_mul_sq3': (skinny.SkinnyGF2n.SKINNY_64_128, 'mul_sq3', 'enc'),
+    'enc_skinny_64_128_mul_sq4': (skinny.SkinnyGF2n.SKINNY_64_128, 'mul_sq4', 'enc'),
+    'enc_skinny_64_128_crv': (skinny.SkinnyGF2n.SKINNY_64_128, 'crv', 'enc'),
+    'dec_skinny_64_128_mul': (skinny.SkinnyGF2n.SKINNY_64_128, 'mul', 'dec'),
+    'dec_skinny_64_128_mul_sq1': (skinny.SkinnyGF2n.SKINNY_64_128, 'mul_sq1', 'dec'),
+    'dec_skinny_64_128_mul_sq2': (skinny.SkinnyGF2n.SKINNY_64_128, 'mul_sq2', 'dec'),
+    'dec_skinny_64_128_mul_sq3': (skinny.SkinnyGF2n.SKINNY_64_128, 'mul_sq3', 'dec'),
+    'dec_skinny_64_128_mul_sq4': (skinny.SkinnyGF2n.SKINNY_64_128, 'mul_sq4', 'dec'),
+    'dec_skinny_64_128_crv': (skinny.SkinnyGF2n.SKINNY_64_128, 'crv', 'dec'),
+    
+    'enc_skinny_128_256_crv': (skinny.SkinnyGF2n.SKINNY_128_256, 'crv', 'enc'),
+    'dec_skinny_128_256_crv': (skinny.SkinnyGF2n.SKINNY_128_256, 'crv', 'dec'),
+}
+
+if circuit in sboxes.keys():
+    sbox = sboxes[circuit]
+    x = sgf2n(0x2, size=simd)
+    start_timer(1)
+    y = sbox(x)
+    stop_timer(1)
+elif circuit in skinny_circuits.keys():
+    variant, sbox, mode = skinny_circuits[circuit]
+    cipher = skinny.SkinnyGF2n(variant, simd, sbox)
+    
+    cellsize, _, tk = variant
+    if cellsize == 4:
+        message = [sgf2n(skinny.cembed4(2), size=simd) for i in range(16)]
+        key = [sgf2n(1, size=simd) for i in range(64 * tk)]
+    else:
+        message = [sgf2n(skinny.cembed8(2), size=simd) for i in range(16)]
+        key = [sgf2n(1, size=simd) for i in range(128 * tk)]
+    
+    start_timer(1)
+    tk_schedule = cipher.expand_key(key[:16], key[16:])
+    if mode == 'enc':
+        cipher.skinny_enc(message, tk_schedule)
+    elif mode == 'dec':
+        cipher.skinny_dec(message, tk_schedule)
+    else:
+        assert False
+    stop_timer(1)
+elif circuit == 'enc_skinny_64_128_bin':
+    cipher = skinny.SkinnyBin(skinny.SkinnyBin.SKINNY_64_128, simd)
+    message = [[sgf2n(0, size=simd) for j in range(4)] for i in range(16)]
+    key = [sgf2n(1, size=simd) for i in range(128)]
+    start_timer(1)
+    tk_schedule = cipher.expand_key(key[:16], key[16:])
+    cipher.skinny_enc(message, tk_schedule)
+    stop_timer(1)
+elif circuit == 'dec_skinny_64_128_bin':
+    cipher = skinny.SkinnyBin(skinny.SkinnyBin.SKINNY_64_128, simd)
+    message = [[sgf2n(0, size=simd) for j in range(4)] for i in range(16)]
+    key = [sgf2n(1, size=simd) for i in range(128)]
+    start_timer(1)
+    tk_schedule = cipher.expand_key(key[:16], key[16:])
+    cipher.skinny_dec(message, tk_schedule)
+    stop_timer(1)
+elif circuit == 'enc_skinny_128_256_bin':
+    cipher = skinny.SkinnyBin(skinny.SkinnyBin.SKINNY_128_256, simd)
+    message = [[sgf2n(0, size=simd) for j in range(8)] for i in range(16)]
+    key = [sgf2n(1, size=simd) for i in range(256)]
+    start_timer(1)
+    tk_schedule = cipher.expand_key(key[:128], key[128:])
+    cipher.skinny_enc(message, tk_schedule)
+    stop_timer(1)
+elif circuit == 'dec_skinny_128_256_bin':
+    cipher = skinny.SkinnyBin(skinny.SkinnyBin.SKINNY_128_256, simd)
+    message = [[sgf2n(0, size=simd) for j in range(8)] for i in range(16)]
+    key = [sgf2n(1, size=simd) for i in range(256)]
+    start_timer(1)
+    tk_schedule = cipher.expand_key(key[:128], key[128:])
+    cipher.skinny_dec(message, tk_schedule)
+    stop_timer(1)
+elif circuit == 'enc_aes_128':
+    key = [sgf2n(0xff, size=simd) for i in range(16)]
+    cipher = Aes128(simd)
+    key = cipher.SecretArrayEmbedd(key)
+    message = [sgf2n(0, size=simd) for i in range(16)]
+    
+    start_timer(1)
+    expanded_key = cipher.expandAESKey(key)
+    AES = cipher.encrypt_without_key_schedule(expanded_key)
+    AES(message)
+    stop_timer(1)
+elif circuit == 'dec_aes_128':
+    key = [sgf2n(0xff, size=simd) for i in range(16)]
+    cipher = Aes128(simd)
+    key = cipher.SecretArrayEmbedd(key)
+    message = [sgf2n(0, size=simd) for i in range(16)]
+    
+    start_timer(1)
+    expanded_key = cipher.expandAESKey(key)
+    AES = cipher.decrypt_without_key_schedule(expanded_key)
+    AES(message)
+    stop_timer(1)
+elif circuit == 'photon_s4_bin':
+    x = [sgf2n(0x0, size=simd) for i in range(4)]
+    start_timer(1)
+    photon._s4_sbox_bin(x, cgf2n(0x1, size=simd))
+    stop_timer(1)
+elif circuit == 'enc_photon_100_crv':
+    cipher = photon.Photon(photon.Photon.PHOTON_100, simd)
+    message = [[sgf2n(photon.cembed4(0),size=simd) for i in range(5)] for j in range(5)]
+    start_timer(1)
+    cipher.forward(message)
+    stop_timer(1)
+elif circuit == 'enc_photon_100_bin':
+    cipher = photon.PhotonBin(photon.PhotonBin.PHOTON_100, simd)
+    message = [[[sgf2n(0, size=simd) for _ in range(4)] for i in range(5)] for j in range(5)]
+    start_timer(1)
+    cipher.forward(message)
+    stop_timer(1)
+elif circuit == 'enc_photon_288_aes':
+    cipher = photon.Photon(photon.Photon.PHOTON_288, simd)
+    message = [[sgf2n(photon.cembed8(0),size=simd) for i in range(6)] for j in range(6)]
+    start_timer(1)
+    cipher.forward(message)
+    stop_timer(1)
+elif circuit == 'enc_photon_288_bin':
+    cipher = photon.PhotonBin(photon.PhotonBin.PHOTON_288, simd)
+    message = [[[sgf2n(0,size=simd) for _ in range(8)] for i in range(6)] for j in range(6)]
+    start_timer(1)
+    cipher.forward(message)
+    stop_timer(1)
+else:
+    assert False, f'Unkonwn circuit {circuit}'

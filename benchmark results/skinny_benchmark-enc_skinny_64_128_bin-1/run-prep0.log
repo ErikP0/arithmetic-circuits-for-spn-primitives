@@ -1,0 +1,5 @@
+Using security parameter 40
+Writing to file in Player-Data//3-p-128/
+Significant amount of unused triples of SPDZ gf2n_. For more accurate benchmarks, consider reducing the batch size with --batch-size.
+Note that some protocols have larger minimum batch sizes.
+Player: Kernel 0.10s User 0.18s
