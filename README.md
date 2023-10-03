@@ -1,4 +1,16 @@
-This repository contains code and benchmark results from the paper "Arithmetic Circuit Implementations of S-boxes for SKINNY and PHOTON in MPC" by Aysajan Abidin, Erik Pohle and Bart Preneel published at ESORICS 2023.
+This repository contains code and benchmark results from the paper "Arithmetic Circuit Implementations of S-boxes for SKINNY and PHOTON in MPC" by Aysajan Abidin, Erik Pohle and Bart Preneel published at ESORICS 2023 [[eprint]](https://eprint.iacr.org/2023/1426).
+
+If content of this repository has been useful to you for academic work, please consider citing
+```
+@misc{cryptoeprint:2023/1426,
+      author = {Aysajan Abidin and Erik Pohle and Bart Preneel},
+      title = {Arithmetic Circuit Implementations of S-boxes for SKINNY and PHOTON in MPC},
+      howpublished = {Cryptology ePrint Archive, Paper 2023/1426},
+      year = {2023},
+      note = {\url{https://eprint.iacr.org/2023/1426}},
+      url = {https://eprint.iacr.org/2023/1426}
+}
+```
 
 ## Content
 - The two jupyter notebooks, `Skinny.ipynb` and `Photon.ipynb` contain example [SageMath](https://www.sagemath.org/) code how to find parameters for SKINNY and PHOTON. The code to find interpolation, polynomial decomposition and embedding parameters for binary fields with any modulus can be found in `crv.py`, `embedding.py` and `spnutils.py`.
