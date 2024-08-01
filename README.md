@@ -2,13 +2,18 @@ This repository contains code and benchmark results from the paper "Arithmetic C
 
 If content of this repository has been useful to you for academic work, please consider citing
 ```
-@misc{cryptoeprint:2023/1426,
-      author = {Aysajan Abidin and Erik Pohle and Bart Preneel},
-      title = {Arithmetic Circuit Implementations of S-boxes for SKINNY and PHOTON in MPC},
-      howpublished = {Cryptology ePrint Archive, Paper 2023/1426},
-      year = {2023},
-      note = {\url{https://eprint.iacr.org/2023/1426}},
-      url = {https://eprint.iacr.org/2023/1426}
+@inproceedings{DBLP:conf/esorics/AbidinPP23,
+  author       = {Aysajan Abidin and Erik Pohle and Bart Preneel},
+  editor       = {Gene Tsudik and Mauro Conti and Kaitai Liang and Georgios Smaragdakis},
+  title        = {Arithmetic Circuit Implementations of S-boxes for {SKINNY} and {PHOTON} in {MPC}},
+  booktitle    = {Computer Security - {ESORICS} 2023 - 28th European Symposium on Research in Computer Security, Proceedings, Part {I}},
+  series       = {Lecture Notes in Computer Science},
+  volume       = {14344},
+  pages        = {86--105},
+  publisher    = {Springer},
+  year         = {2023},
+  url          = {https://doi.org/10.1007/978-3-031-50594-2\_5},
+  doi          = {10.1007/978-3-031-50594-2\_5},
 }
 ```
 
